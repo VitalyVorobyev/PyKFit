@@ -53,6 +53,9 @@ class FitBase(abc.ABC):
     def prepareInputMatrix(self):
         raise NotImplementedError
 
+    def prepareOututMatrix(self):
+        raise NotImplementedError
+
     def calculateNDF(self):
         raise NotImplementedError
 
@@ -61,6 +64,7 @@ class FitBase(abc.ABC):
 
     def doFit1(self):
         assert len(self.tracks) >= self.necessaryTrackCount
+        assert all(item in self.state for item in ['ala', 'al0', 'Val1'])
 
         self.prepareInputMatrix()
         self.calculateNDF()
@@ -71,5 +75,45 @@ class FitBase(abc.ABC):
 
         for i in range(self.max_iterations):
             self.makeCoreMatrix()
+            chisq = self.__in_loop_calculation()
 
-            
+            if chisq_tmp < chisq:
+                chisq = chisq_tmp
+                for key, value in alp_tmp.items():
+                    self.state[key] = value
+                break
+            else:
+                chisq_tmp = chisq
+                for key in alp_tmp.keys():
+                    alp_tmp[key] = self.state[key]
+
+                if i == self.max_iterations - 1:
+                    self.state['ala'] = alp_tmp['al1']
+                    self.maxIterationReached = True
+
+        self.prepareOutputMatrix()
+        self.state['chisq'] = chisq
+        self.fitted = True
+
+    def __in_loop_calculation(self):
+        self.state['VD'] = self.__updated_VD()
+        offset = self.__offset()
+        self.state['lam'] = self.state['VD'] @ offset
+        chisq = self.state['lam'].T() * offset
+        self.state['al1'] = self.__updated_al1()
+        self.state['Val0'] = self.__updated_Val1()
+
+        return chisq
+
+    def __updated_VD(self):
+        return inverse_similarity(self.state['Val0'], self.state['D'])
+
+    def __offset(self):
+        return self.state['d'] + self.state['D'] @ (self.state['al0'] - self.state['al1'])
+
+    def __updated_al1(self):
+        return self.state['al0'] - self.state['Val0'] @ self.state['D'].T() * self.state['lam']
+
+    def __updated_Val1(self):
+        return self.state['Val0'] - self.state['Val0'] @ self.state['D'].T() @ self.state['VD'] @ self.state['D'] @ self.state['Val0']
+    

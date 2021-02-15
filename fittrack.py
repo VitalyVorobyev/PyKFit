@@ -32,8 +32,14 @@ class KFitTrack:
         self.charge = kwargs['charge']
         self.vertex, self.vertex_error = None, None
 
+    def errmtx(self, after):
+        return self.after['errmtx'] if after else self.before['errmtx']
+
     def momentum(self, after):
         return self.after['mompos'][:4] if after else self.before['mompos'][:4]
+
+    def position(self, after):
+        return self.after['mompos'][-3:] if after else self.before['mompos'][-3:]
 
     def fitPars(self, afterFit):
         return cutElement(
