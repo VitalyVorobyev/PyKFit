@@ -11,6 +11,12 @@ from scipy.linalg import block_diag
 def momentumFromMass(p3, mass):
     return np.array(list(p3) + [np.sqrt(mass**2 + np.sum(p3**2))])
 
+def massSqFromP3E(p3, e):
+    return e**2 - np.sum(p3**2)
+
+def massSqFromP4(p4):
+    return massSqFromP3E(p4[:3], p4[3])
+
 class MassFit(FitBase):
     def __init__(self):
         self.necessaryTrackCount = 2
@@ -29,6 +35,7 @@ class MassFit(FitBase):
         }
 
         self.fitVertex = False
+        self.atDecayPoint = True
     
     def doFit(self):
         self.doFit1()
@@ -89,7 +96,6 @@ class MassFit(FitBase):
         charges = speedOfLight * magneticField * np.array([trk.charge for trk in self.tracks])
         al1_sum[6] = charges.sum()
         energy = []
-        energyInv = []
 
         idx = 0
         for trk, fixed, ch in zip(self.tracks, self.fixMass, charges):
@@ -100,24 +106,22 @@ class MassFit(FitBase):
 
             if fixed:
                 assert e != 0
-                invE = 1. / e
-                energyInv.append(invE)
-                al1_sum[3:6] += np.array([e, al1_prime[idx + 1] * ch * invE, al1_prime[idx + 0] * ch * invE])
+                al1_sum[3:6] += np.array([e, al1_prime[idx + 1] * ch / e, al1_prime[idx + 0] * ch / e])
             else:
                 al1_sum[3] += al1_prime[idx + 3]
             al1_sum[:3] += al1_prime[idx:idx + 3]
             idx += 7
 
-        self.state['d'] = al1_sum[3]**2 - np.sum(al1_sum[:3]**2) - self.targetMass**2
+        self.state['d'] = massSqFromP4(al1_sum[3][:4]) - self.targetMass**2
 
         idx = 0
-        for jdx, (trk, fixed, ch) in enumerate(zip(self.tracks, self.fixMass, charges)):
+        for trk, fixed, ch, e in zip(self.tracks, self.fixMass, charges, energy):
             if fixed:
-                self.state['D'][idx:idx + 3] = 2 * al1_sum[3] * al1_prime[idx:idx + 3] * energyInv[jdx] - al1_sum[:3]
+                self.state['D'][idx:idx + 3] = 2 * al1_sum[3] * al1_prime[idx:idx + 3] / e - al1_sum[:3]
                 self.state['D'][idx + 3] = 0
                 self.state['D'][idx + 4:idx + 7] = np.array([
-                    -2 * ch * (al1_sum[3] * al1_prime[idx + 1]) * energyInv[jdx] - al1_sum[1],
-                     2 * ch * (al1_sum[3] * al1_prime[idx + 0]) * energyInv[jdx] - al1_sum[0], 0])
+                    -2 * ch * (al1_sum[3] * al1_prime[idx + 1]) / e - al1_sum[1],
+                     2 * ch * (al1_sum[3] * al1_prime[idx + 0]) / e - al1_sum[0], 0])
             else:
                 self.state['D'][idx:idx + 3] = -2 * al1_sum[:3]
                 self.state['D'][idx:idx + 4] =  2 * al1_sum[3]
@@ -132,14 +136,43 @@ class MassFit(FitBase):
 
     def __makeCoreMatrixWoVertex(self):
         al1_prime = self.state['al1']
-        al1_sum = np.zeros(7)
-        size = len(self.tracks) * 7
+        al1_sum = np.zeros(4)
+        
         charges = speedOfLight * magneticField * np.array([trk.charge for trk in self.tracks])
         al1_sum[6] = charges.sum()
         energy = []
-        energyInv = []
 
-        # TODO:
+        idx = 0
+        for trk, fixed, ch in zip(self.tracks, self.fixMass, charges):
+            if self.atDecayPoint:
+                al1_prime[idx    ] -= ch * (self.before['vertex'][1] - al1_prime[idx + 5])
+                al1_prime[idx + 1] += ch * (self.before['vertex'][0] - al1_prime[idx + 4])
+
+            e = np.sqrt(al1_prime[:3]**2 - trk.mass(False)**2)
+            energy.append(e)
+
+            al1_sum[3] += e if fixed else al1_prime[idx + 3]
+            al1_sum[:3] += al1_prime[idx:idx + 3]
+
+            idx += 7
+
+        self.state['d'] = massSqFromP4(al1_sum[3][:4]) - self.targetMass**2
+
+        idx = 0
+        for trk, fixed, ch, e in zip(self.tracks, self.fixMass, charges, energy):
+            if fixed:
+                self.state['D'][idx:idx + 3] = 2 * al1_sum[3] * al1_prime[idx:idx + 3] / e - al1_sum[:3] # TODO: check this line!
+                self.state['D'][idx + 3] = 0
+                self.state['D'][idx + 4:idx + 7] = np.zeros(3) if not self.atDecayPoint else\
+                    np.array([
+                        -2. * ch * (al1_sum[3] * al1_prime[idx + 1] / e - al1_sum[1]),
+                         2. * ch * (al1_sum[3] * al1_prime[idx    ] / e - al1_sum[0]), 0])
+            else:
+                self.state['D'][idx:idx + 3] = -2 * al1_sum[:3]
+                self.state['D'][idx + 3] = 2 * al1_sum[3]
+                self.state['D'][idx + 4:idx + 7] = np.zeros(3) if not self.atDecayPoint else\
+                    np.array([2 * ch * al1_sum[1], -2 * ch * al1_sum[0], 0])
+            idx += 7
 
     def __checkFixMass(self):
         if not self.fixMass:
@@ -147,5 +180,6 @@ class MassFit(FitBase):
         else:
             assert len(self.fixMass) == len(self.tracks)
     
-    def updateParent(particle):
-        pass
+    def updateParent(self, particle):
+        kmp = MakeParent()
+
