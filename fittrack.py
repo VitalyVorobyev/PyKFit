@@ -38,6 +38,12 @@ class KFitTrack:
     def momentum(self, after):
         return self.after['mompos'][:4] if after else self.before['mompos'][:4]
 
+    def set_momentum(self, p, after):
+        if after:
+            self.after['mompos'][:4] = p
+        else:
+            self.before['mompos'][:4] = p
+
     def position(self, after):
         return self.after['mompos'][-3:] if after else self.before['mompos'][-3:]
 
@@ -74,3 +80,9 @@ class KFitTrack:
     def chisqMomPos(self):
         delta = self.deltaMomPos
         return delta.T() @ np.linalg.inv(self.before['errmtx']) @ delta
+
+    def massSq(self, after):
+        return self.momentum(after)[3]**2 - np.sum(self.momentum(after)[:3]**2)
+
+    def mass(self, after):
+        return np.sqrt(self.massSq(after))

@@ -53,7 +53,7 @@ class FitBase(abc.ABC):
     def prepareInputMatrix(self):
         raise NotImplementedError
 
-    def prepareOututMatrix(self):
+    def prepareOutputMatrix(self):
         raise NotImplementedError
 
     def calculateNDF(self):
