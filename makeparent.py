@@ -22,15 +22,16 @@ class MakeParent:
     def doMake(self):
         charge = sum([trk.charge for trk in self.tracks])
 
-        dMdC = self.calculateDMdC()
-        ec = self.calculateError()
-        em = dMdC @ ec @ dMdC.T()
+        dMdC = self.calculateDMdC()  # [7xN]
+        ec = self.calculateError()   # [NxN]
+        em = dMdC @ ec @ dMdC.T
 
         momentum = sum([trk.momentum(self.after) for trk in self.tracks])
         if self.atDecayPoint:
-            dxy = -speedOfLight * magneticField * np.array([
+            deltas = speedOfLight * magneticField * sum([
                 trk.charge * (self.vertex[:2] - trk.position(self.after)[:2]) for trk in self.tracks])
-            momentum[:2] += dxy[::-1] * [-1, 1]
+            momentum[0] -= deltas[1]
+            momentum[1] += deltas[0]
 
         self.parent = KFitTrack.makeTrackBefore(momentum, self.vertex, em, charge)
 
@@ -61,8 +62,10 @@ class MakeParent:
             jdx = 0
             for corr in self.trackVtxError:
                 err[index:index+3, jdx:jdx+7] = corr
-                err[jdx:jdx+7, index:index+3] = corr.T()
+                err[jdx:jdx+7, index:index+3] = corr.T
                 jdx += 7
+        
+        return err
 
     def calculateDMdC(self):
         index = len(self.tracks) * 7

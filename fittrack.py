@@ -20,14 +20,14 @@ class KFitTrack:
                 kwargs.get('pBefore', np.empty(4)),
                 kwargs.get('xBefore', np.empty(3))
             ]).reshape(-1,1),
-            'errmtx' : kwargs.get('eBefore', np.empty(7, 7))
+            'errmtx' : kwargs.get('eBefore', np.empty((7, 7)))
         }
         self.after = {
             'mompos' : np.concatenate([
                 kwargs.get('pAfter', np.empty(4)),
                 kwargs.get('xAfter', np.empty(3))
             ]).reshape(-1,1),
-            'errmtx' : kwargs.get('eAfter', np.empty(7, 7))
+            'errmtx' : kwargs.get('eAfter', np.empty((7, 7)))
         }
         self.charge = kwargs['charge']
         self.vertex, self.vertex_error = None, None
