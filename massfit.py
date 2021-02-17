@@ -106,10 +106,11 @@ class MassFit(FitBase):
 
         energy, idx = [], 0
         for trk, fixed, ch in zip(self.tracks, self.fixMass, charges):
+            # Rotations in magnetic field in the xy plane
             if self.fitVertex:
-                al1_prime[:2] = ch * np.array([[0, -1], [1, 0]]) @ (al1_prime[size:size+2] - al1_prime[idx+4:idx+6])
+                al1_prime[:2] += ch * np.array([[0, -1], [1, 0]]) @ (al1_prime[size:size+2] - al1_prime[idx+4:idx+6])
             elif self.atDecayPoint:
-                al1_prime[:2] = ch * np.array([[0, -1], [1, 0]]) @ (self.before['vertex'][:2] - al1_prime[idx+4:idx+6]).reshape(2,-1)
+                al1_prime[:2] += ch * np.array([[0, -1], [1, 0]]) @ (self.before['vertex'][:2] - al1_prime[idx+4:idx+6])
 
             e = np.sqrt(trk.mass(False)**2 + np.sum(al1_prime[idx:idx + 3]**2))
             energy.append(e)

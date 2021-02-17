@@ -71,8 +71,8 @@ class FitBase(abc.ABC):
 
         chisq, chisq_tmp = 0., 1.e10
         self.state.update({
-            'ala' : self.state['al0'],
-            'al1' : self.state['al0'],
+            'ala' : self.state['al0'].copy(),
+            'al1' : self.state['al0'].copy(),
             'Val1': np.empty(self.state['Val0'].shape),
         })
         alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
@@ -107,7 +107,7 @@ class FitBase(abc.ABC):
         self.state['al1'] = self.__updated_al1()
         self.state['Val1'] = self.__updated_Val1()
 
-        return chisq
+        return chisq.item()
 
     def __updated_VD(self):
         return inverse_similarity(self.state['Val0'], self.state['D'])
