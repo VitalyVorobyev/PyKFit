@@ -2,7 +2,8 @@
 """ """
 
 import numpy as np
-from massfit import MassFit
+# from massfit import MassFit
+from basicmassfit import BasicMassFit
 from decaysample import d0pipi
 
 class Particle:

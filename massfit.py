@@ -38,10 +38,7 @@ class MassFit(FitBase):
         self.fitVertex = False
         self.atDecayPoint = True
     
-    def doFit(self):
-        self.doFit1()
-
-    def prepareInputMatrix(self):
+    def fillInputMatrix(self):
         assert len(self.tracks) >= self.necessaryTrackCount
         self.__checkFixMass()
 
@@ -60,7 +57,7 @@ class MassFit(FitBase):
             self.prepareCorrelation()
 
 
-    def prepareOutputMatrix(self):
+    def updateDescendants(self):
         index = 0
         for trk, fixed in zip(self.tracks, self.fixMass):
             curpars = self.state['al1'][index:index+7]
@@ -94,10 +91,10 @@ class MassFit(FitBase):
                 self.fixMass[id1], self.fixMass[id2])\
             if after else super().correlation(id1, id2, after)
 
-    def calculateNDF(self):
-        self.ndf = 1
+    def ndf(self):
+        return 1
 
-    def makeCoreMatrix(self):
+    def calculateGradients(self):
         al1_prime = self.state['al1'].copy()
         al1_sum = np.zeros((6,1)) if self.fitVertex else np.zeros((4,1))
         size = len(self.tracks) * 7

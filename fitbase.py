@@ -20,13 +20,13 @@ def inverse_similarity(A, B) -> float:
 
 class FitBase(abc.ABC):
     """ Abstract base class for kinematic fitters """
-    def __init__(self):
+    def __init__(self, ntracks, niter):
         self.tracks = []
         self.correlations = []
         self.fitted = False
         self.state = {}
-        self.necessaryTrackCount = 999
-        self.max_iterations = 10
+        self.necessaryTrackCount = ntracks
+        self.max_iterations = niter
 
     def addTrack(self, p, x, e, q):
         self.tracks.append(KFitTrack.makeTrackBefore(p, x, e, q))
@@ -51,24 +51,22 @@ class FitBase(abc.ABC):
         index = len(self.tracks) * idx1 - idx1 * (idx1 - 1) / 2 + 2*idx2 - idx1 - 1
         return self.correlation[index] if id1 == idx1 else self.correlation[index].T
 
-    def prepareInputMatrix(self):
+    def fillInputMatrix(self):
         raise NotImplementedError
 
-    def prepareOutputMatrix(self):
+    def updateDescendants(self):
         raise NotImplementedError
 
-    def calculateNDF(self):
+    def ndf(self):
         raise NotImplementedError
 
-    def makeCoreMatrix(self):
+    def calculateGradients(self):
         raise NotImplementedError
 
-    def doFit1(self):
+    def doFit(self):
         assert len(self.tracks) >= self.necessaryTrackCount
-
-        self.prepareInputMatrix()
-        self.calculateNDF()
-
+        self.fillInputMatrix()
+    
         chisq, chisq_tmp = 0., 1.e10
         self.state.update({
             'ala' : self.state['al0'].copy(),
@@ -78,7 +76,7 @@ class FitBase(abc.ABC):
         alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
 
         for i in range(self.max_iterations):
-            self.makeCoreMatrix()
+            self.calculateGradients()
             chisq = self.__in_loop_calculation()
 
             if chisq_tmp < chisq:
@@ -95,7 +93,7 @@ class FitBase(abc.ABC):
                     self.state['ala'] = alp_tmp['al1']
                     self.maxIterationReached = True
 
-        self.prepareOutputMatrix()
+        self.updateDescendants()
         self.chisq = chisq
         self.fitted = True
 
