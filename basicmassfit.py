@@ -1,25 +1,15 @@
 """ """
 
-from numpy.core.numeric import full
 from fitbase import FitBase
+from particle import Particle
+from auxkine import massSqFromP3E, momentumFromMass, make_beta
 
 import numpy as np
 from scipy.linalg import block_diag
 
-def momentumFromMass(p3, mass):
-    return np.array(list(p3) + [np.sqrt(mass**2 + np.sum(p3**2))])
-
-def make_beta(p):
-    return p[:3].reshape(-1, 1) / p[3]
-
-def massSqFromP3E(p3, e):
-    return e**2 - np.sum(p3**2)
-
-def massSqFromP4(p4):
-    return massSqFromP3E(p4[:3], p4[3])
-
 class BasicMassFit(FitBase):
     def __init__(self, targetMass):
+        super().__init__(2, 10)
         self.targetMass = targetMass
         self.necessaryTrackCount = 2
         self.tracks = []
@@ -30,8 +20,8 @@ class BasicMassFit(FitBase):
         assert len(self.tracks) >= self.necessaryTrackCount
 
         self.state.update({
-            'al0' : np.concatenate([trk.momentum for trk in self.tracks]).reshape(-1, 1),
-            'Val0': block_diag(*[trk.momentumError for trk in self.tracks])
+            'al0' : np.concatenate([trk.threeMomentum for trk in self.tracks]).reshape(-1, 1),
+            'Val0': block_diag(*[trk.threeMomentumError for trk in self.tracks])
         })
 
     def updateDescendants(self):
@@ -73,5 +63,10 @@ class BasicMassFit(FitBase):
     def makeParent(self):
         if not self.descendants_updated:
             self.updateDescendants()
-        parent_momentum = sum([trk.fourMomentum for trk in self.tracks])
-        parent_momentum_error = sum([trk.momentumError for trk in self.tracks])
+        return Particle(
+            charge=sum(trk.charge for trk in self.tracks),
+            momentum=sum([trk.fourMomentum for trk in self.tracks]),
+            errmtx=sum([trk.momentumError for trk in self.tracks]),
+            extra={'chisq':  self.chisq}
+        )
+    

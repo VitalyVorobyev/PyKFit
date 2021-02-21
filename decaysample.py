@@ -2,8 +2,7 @@
 
 import numpy as np
 from scipy.spatial.transform import Rotation
-
-from fittrack import KFitTrack
+from particle import Particle
 
 MD0 = 1.865
 MPI = 0.145
@@ -32,8 +31,8 @@ def d0pipi(sigma=0.001, seed=None):
     p2 = np.array(list(p2) + [e2])
 
     return (
-        KFitTrack.makeTrackBefore(p1, np.zeros(3), errmtx, +1),
-        KFitTrack.makeTrackBefore(p2, np.zeros(3), errmtx, -1)
+        Particle(+1, p1, errmtx),
+        Particle(-1, p2, errmtx)
     )
 
 def main():
