@@ -93,7 +93,7 @@ def helixParams(pos, mom, q, B):
 
 def helixJacobian(pos, mom, q, B):
     """ d (helix) / d (r, p): [6x5] matrix """
-    x, y, z = pos
+    x, y, _ = pos
     px, py, pz = mom
     qalph = q * alpha(B)
 
@@ -110,7 +110,7 @@ def helixJacobian(pos, mom, q, B):
     return np.array([
         [-py0 / pt0, -qalph * px0 / pt0**2, 0, -pz * px0 / pt0, 0],
         [ px0 / pt0, -qalph * py0 / pt0**2, 0, -pz * py0 / pt0, 0],
-        [""" TODO """],
+        [0, 0, 0, 1, 0],
         [
             (px0 / pt0 - px / pt) / qalph,
             -py0 / pt0**2,
