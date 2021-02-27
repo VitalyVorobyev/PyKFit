@@ -78,8 +78,9 @@ class FitBase(abc.ABC):
         for i in range(self.max_iterations):
             self.calculateGradients()
             chisq = self.__in_loop_calculation()
+            print(f'iteration {i}/{self.max_iterations} {chisq:.6f} {chisq_tmp:.6f}')
 
-            if chisq_tmp < chisq:
+            if chisq_tmp < chisq + 1.e-6:
                 chisq = chisq_tmp
                 for key, value in alp_tmp.items():
                     self.state[key] = value

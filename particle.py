@@ -1,4 +1,6 @@
-from auxkine import massSqFromP4
+""" """
+
+from auxkine import massFromP4
 
 class Particle:
     def __init__(self, charge, momentum, errmtx, vertex=None, extra={}):
@@ -10,7 +12,7 @@ class Particle:
 
     @property
     def mass(self):
-        return massSqFromP4(self.momentum).item()
+        return massFromP4(self.momentum).item()
 
     @property
     def threeMomentumError(self):

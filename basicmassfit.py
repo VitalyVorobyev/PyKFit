@@ -11,7 +11,6 @@ class BasicMassFit(FitBase):
     def __init__(self, targetMass):
         super().__init__(2, 10)
         self.targetMass = targetMass
-        self.necessaryTrackCount = 2
         self.tracks = []
         self.trksize = 3
         self.descendants_updated = False
@@ -23,6 +22,7 @@ class BasicMassFit(FitBase):
             'al0' : np.concatenate([trk.threeMomentum for trk in self.tracks]).reshape(-1, 1),
             'Val0': block_diag(*[trk.threeMomentumError for trk in self.tracks])
         })
+        self.state['D'] = np.empty(self.state['al0'].shape)
 
     def updateDescendants(self):
         ilo, ihi = 0, self.trksize
@@ -32,13 +32,15 @@ class BasicMassFit(FitBase):
             beta = make_beta(p4)
 
             p3err = self.state['Val1'][ilo:ihi, ilo:ihi]
-            p4err = np.zeros((4,4))
+            p4err = np.empty((4,4))
             p4err[:-1,:-1] = p3err
-            p4err[3, :3] = p4err[:3, 3] = beta @ p3err
-            p4err[3, 3] = beta @ p3err @ beta.T()
+            p4err[:3, 3:4] = p3err @ beta  # [3x3] x [3x1]
+            p4err[3:4, :3] = p4err[3, :3].T
+            p4err[3, 3] = beta.T @ p3err @ beta
 
             trk.momentum = p4
             trk.momentumError = p4err
+
             ilo, ihi = ihi, ihi + self.trksize
         self.descendants_updated = True
 
@@ -53,11 +55,10 @@ class BasicMassFit(FitBase):
 
         totalEnergy = sum(energy)
         self.state['d'] = np.array(massSqFromP3E(al1_sum.ravel(), totalEnergy) - self.targetMass**2).reshape(-1, 1)
-        self.state['D'] = np.empty(self.state['al0'].shape)
 
         ilo, ihi = 0, self.trksize
         for trk, e in zip(self.tracks, energy):
-            self.state['D'][ilo:ihi] = 2 * (totalEnergy * self.state['al1'][ilo:ihi] / e - al1_sum),
+            self.state['D'][ilo:ihi] = 2 * (totalEnergy * self.state['al1'][ilo:ihi] / e - al1_sum)
             ilo, ihi = ihi, ihi + self.trksize
 
     def makeParent(self):
@@ -65,7 +66,7 @@ class BasicMassFit(FitBase):
             self.updateDescendants()
         return Particle(
             charge=sum(trk.charge for trk in self.tracks),
-            momentum=sum([trk.fourMomentum for trk in self.tracks]),
+            momentum=sum([trk.momentum for trk in self.tracks]),
             errmtx=sum([trk.momentumError for trk in self.tracks]),
             extra={'chisq':  self.chisq}
         )

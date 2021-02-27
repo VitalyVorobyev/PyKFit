@@ -14,3 +14,6 @@ def massSqFromP3E(p3, e):
 def massSqFromP4(p4):
     return massSqFromP3E(p4[:3], p4[3])
 
+def massFromP4(p4):
+    return np.sqrt(massSqFromP3E(p4[:3], p4[3]))
+

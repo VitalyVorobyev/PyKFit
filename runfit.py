@@ -16,7 +16,7 @@ def d0pipiFit():
         errmtx=None
     )
     print(d0before.mass)
-    print(f'{d0before.mass:.4f}')
+    print(f'{d0before.mass:.9f}')
     
     mfit = BasicMassFit(1.865)
     mfit.tracks = tracks
@@ -25,8 +25,7 @@ def d0pipiFit():
 
     d0after = mfit.makeParent()
     
-
-    print(f'{d0after.mass:.4f} {d0after.extra["chisq"]:.4f}')
+    print(f'{d0after.mass:.9f} {d0after.extra["chisq"]:.4f}')
 
 def main():
     d0pipiFit()
