@@ -48,7 +48,7 @@ class Helix:
         return self.pt(q, B) * np.array([np.cos(phi), np.sin(phi), self.tanl])
 
     def jacobian(self, length, q, B):
-        """ d (helix) / d (r, p): [5x6] matrix """
+        """ d (r, p) / d (helix): [5x6] matrix """
         sphi, cphi = np.sin(self.phi(length)), np.cos(self.phi(length))
         sphi0, cphi0 = np.sin(self.phi0), np.cos(self.phi0)
         r = self.rho()
@@ -90,6 +90,43 @@ def helixParams(pos, mom, q, B):
         Helix((pt0 - pt) / qalph, phi0, qalph / pt, z - length * tanl, tanl),
         length
     )
+
+def helixJacobian(pos, mom, q, B):
+    """ d (helix) / d (r, p): [6x5] matrix """
+    x, y, z = pos
+    px, py, pz = mom
+    qalph = q * alpha(B)
+
+    px0 = px + y * qalph
+    py0 = py - x * qalph
+
+    pt = np.hypot(px, py)
+    pt0 = np.hypot(px0, py0)
+
+    phi = np.arctan2(py, px)
+    phi0 = np.arctan2(py0, px0)
+    length = (phi - phi0) * pt / qalph
+
+    return np.array([
+        [-py0 / pt0, -qalph * px0 / pt0**2, 0, -pz * px0 / pt0, 0],
+        [ px0 / pt0, -qalph * py0 / pt0**2, 0, -pz * py0 / pt0, 0],
+        [""" TODO """],
+        [
+            (px0 / pt0 - px / pt) / qalph,
+            -py0 / pt0**2,
+            -qalph * px / pt**3,
+            -pz * (py0 / pt0**2 - py / pt**2) / qalph,
+            -pz * px / pt**3
+        ],
+        [
+            (py0 / pt0 - py / pt) / qalph,
+            px0 / pt0**2,
+            -qalph * py / pt**3,
+            -pz * (px0 / pt0**2 - px / pt**2) / qalph,
+            -pz * py / pt**3
+        ],
+        [0, 0, 0, -length / pt, 1 / pt]
+    ])
 
 def makeHelix(pos, mom, errmtx):
     pass
