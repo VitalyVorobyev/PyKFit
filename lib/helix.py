@@ -37,34 +37,38 @@ class Helix:
         return self.phi0 + self.omega * length
 
     def position(self, length):
-        r, phi = self.r, self.phi(length)
+        r, phi = self.rho, self.phi(length)
         return np.array([
              r * np.sin(phi) - (r + self.d0) * np.sin(self.phi0),
             -r * np.cos(phi) + (r + self.d0) * np.cos(self.phi0),
             self.z0 + length * self.tanl])
     
     def momentum(self, length, q, B):
-        phi = self.phi(length), 
+        phi = self.phi(length)
         return self.pt(q, B) * np.array([np.cos(phi), np.sin(phi), self.tanl])
 
     def jacobian(self, length, q, B):
         """ d (r, p) / d (helix): [5x6] matrix """
-        sphi, cphi = np.sin(self.phi(length)), np.cos(self.phi(length))
+        phi = self.phi(length)
+        sphi, cphi = np.sin(phi), np.cos(phi)
         sphi0, cphi0 = np.sin(self.phi0), np.cos(self.phi0)
-        r = self.rho()
-        qalphr = q * alpha(B) * r
+        r = self.rho
+        lom, rsq = length * self.omega, r**2
+        qalph = q * alpha(B)
         return np.array([
             [-sphi0, cphi0, 0, 0, 0, 0],
             [
-                r * cphi - (r + self.d0) * cphi,
-                r * sphi - (r + self.d0) * sphi, 0,
-                 qalphr * sphi, -qalphr * cphi, 0],
+                r * cphi - (r + self.d0) * cphi0,
+                r * sphi - (r + self.d0) * sphi0, 0,
+                -qalph * r * sphi, qalph * r * cphi, 0],
             [
-                r**2 * ( sphi0 - sphi + length * self.omega * cphi),
-                r**2 * (-cphi0 + cphi + length * self.omega * sphi), 0,
-                 qalphr * sphi * length, -qalphr * cphi * length, 0],
+                rsq * ( sphi0 - sphi + lom * cphi),
+                rsq * (-cphi0 + cphi + lom * sphi), 0,
+                -rsq * qalph * (cphi + lom * sphi),
+                -rsq * qalph * (sphi - lom * cphi),
+                -rsq * qalph * self.tanl],
             [0, 0, 1, 0, 0, 0],
-            [0, 0, length, 0, 0, qalphr],
+            [0, 0, length, 0, 0, qalph * r],
         ])
 
 
@@ -102,28 +106,29 @@ def helixJacobian(pos, mom, q, B):
 
     pt = np.hypot(px, py)
     pt0 = np.hypot(px0, py0)
+    pt0sq, ptsq, ptcu = pt0**2, pt**2, pt**3
 
     phi = np.arctan2(py, px)
     phi0 = np.arctan2(py0, px0)
     length = (phi - phi0) * pt / qalph
 
     return np.array([
-        [-py0 / pt0, -qalph * px0 / pt0**2, 0, -pz * px0 / pt0, 0],
-        [ px0 / pt0, -qalph * py0 / pt0**2, 0, -pz * py0 / pt0, 0],
+        [-py0 / pt0, -qalph * px0 / pt0sq, 0, -pz * px0 / pt0sq, 0],
+        [ px0 / pt0, -qalph * py0 / pt0sq, 0, -pz * py0 / pt0sq, 0],
         [0, 0, 0, 1, 0],
         [
             (px0 / pt0 - px / pt) / qalph,
-            -py0 / pt0**2,
-            -qalph * px / pt**3,
-            -pz * (py0 / pt0**2 - py / pt**2) / qalph,
-            -pz * px / pt**3
+            -py0 / pt0sq,
+            -qalph * px / ptcu,
+            -pz * (py0 / pt0sq - py / ptsq) / qalph,
+            -pz * px / ptcu
         ],
         [
             (py0 / pt0 - py / pt) / qalph,
-            px0 / pt0**2,
-            -qalph * py / pt**3,
-            -pz * (px0 / pt0**2 - px / pt**2) / qalph,
-            -pz * py / pt**3
+            px0 / pt0sq,
+            -qalph * py / ptcu,
+            pz * (px0 / pt0sq - px / ptsq) / qalph,
+            -pz * py / ptcu
         ],
         [0, 0, 0, -length / pt, 1 / pt]
     ])
