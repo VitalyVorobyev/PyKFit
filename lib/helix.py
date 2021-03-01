@@ -71,6 +71,14 @@ class Helix:
             [0, 0, length, 0, 0, qalph * r],
         ])
 
+    def cartesianCovariance(self, length, q, B):
+        """ [6x6] covariariance matrix for Cartesian coordinates """
+        if self.errmtx is None:
+            return None
+        
+        jac = self.jacobian(length, q, B)
+        return jac.T @ self.errmtx @ jac
+
 
 def helixParams(pos, mom, q, B):
     x, y, z = pos
@@ -133,5 +141,8 @@ def helixJacobian(pos, mom, q, B):
         [0, 0, 0, -length / pt, 1 / pt]
     ])
 
-def makeHelix(pos, mom, errmtx):
-    pass
+def makeHelix(pos, mom, q, B, errmtx=None):
+    jac = helixJacobian(pos, mom, q, B)
+    helix, length = helixParams(pos, mom, q, B)
+    helix.errmtx = None if errmtx is None else jac.T @ errmtx @ jac
+    return helix, length
