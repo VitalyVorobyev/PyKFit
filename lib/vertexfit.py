@@ -37,12 +37,12 @@ class VertexFit(FitBase):
 
     def fillInputMatrix(self):
         self.state.update({
-            'al0' : np.concatenate([trk.helix.pars for trk in self.tracks] + [self.v0]),
+            'al0' : np.concatenate([trk.helix.pars for trk in self.tracks] + [self.v0]).reshape(-1, 1),
             'Val0' : block_diag(*[trk.helix.errmtx for trk in self.tracks], self.v0err)
         })
 
-        self.state['d'] = np.empty(self.numConstraints())
-        self.state['D'] = np.zeros((self.numConstraints(), self.numParams()))
+        self.state['d'] = np.empty(self.numConstraints()).reshape(-1, 1)
+        self.state['D'] = np.zeros((self.numParams(), self.numConstraints()))
 
     def calculateGradients(self):
         vtx = self.state['al0'][-3:]
@@ -54,8 +54,8 @@ class VertexFit(FitBase):
 
             self.state['d'][lo:hi] = vertexOffset(hpars, vtx)
             hparsGrad, vtxGrad = vertexOffsetGradient(hpars, vtx)
-            self.state['D'][lo:hi, jlo:jhi] = hparsGrad
-            self.state['D'][lo:hi, -3:] = vtxGrad
+            self.state['D'][jlo:jhi, lo:hi] = hparsGrad
+            self.state['D'][-3:, lo:hi] = vtxGrad
 
             lo, hi = hi, hi + 2
             jlo, jhi = jhi, jhi + self.trksize

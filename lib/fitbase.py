@@ -101,6 +101,7 @@ class FitBase(abc.ABC):
     def __in_loop_calculation(self):
         self.state['VD'] = self.__updated_VD()
         offset = self.__offset()
+        print(self.state['VD'].shape, offset.shape)
         self.state['lam'] = self.state['VD'] @ offset
         chisq = self.state['lam'].T @ offset
         self.state['al1'] = self.__updated_al1()
@@ -109,15 +110,18 @@ class FitBase(abc.ABC):
         return chisq.item()
 
     def __updated_VD(self):
+        print(self.state['Val0'].shape, self.state['D'].shape)
         return inverse_similarity(self.state['Val0'], self.state['D'])
 
     def __offset(self):
         """ [dx1] + [Nxd].T x ([Nx1] - [Nx1]) -> [dx1] """
+        print(self.state['d'].shape, self.state['D'].shape, self.state['al0'].shape, self.state['al1'].shape)
         return self.state['d'] + self.state['D'].T @ (self.state['al0'] - self.state['al1'])
 
     def __updated_al1(self):
         """ [Nx1] - [NxN] x [Nxd] x [dx1] """
-        return self.state['al0'] - self.state['Val0'] @ self.state['D'] * self.state['lam']
+        print(self.state['Val0'].shape, self.state['D'].shape, self.state['lam'].shape)
+        return self.state['al0'] - self.state['Val0'] @ self.state['D'] @ self.state['lam']
 
     def __updated_Val1(self):
         """ [NxN] - [NxN] x [Nxd] x [dxd] x [Nxd].T x [NxN] -> [NxN] """

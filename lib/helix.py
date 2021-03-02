@@ -161,7 +161,7 @@ def vertexOffset(hpars, vtx):
     return np.array([
         vtx[0] - ( np.sin(phiv) - d0om * np.sin(phi0)) / omega,
         vtx[1] - (-np.cos(phiv) + d0om * np.cos(phi0)) / omega,
-    ]).reshape(1, -1)
+    ]).reshape(-1, 1)
 
 
 def vertexOffsetGradient(hpars, vtx):
@@ -190,11 +190,11 @@ def vertexOffsetGradient(hpars, vtx):
             sphiv / tanl,
             sphiv * dztan / tanl
         ]
-    ])
+    ]).T
 
     g2 = np.array([  # d / d (vtx)
         [1, 0, -cphiv / tanl],
         [0, 1, -sphiv / tanl]
-    ])
+    ]).T
 
     return (g1, g2)
