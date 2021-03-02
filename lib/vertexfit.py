@@ -6,6 +6,8 @@ from particle import Particle
 import numpy as np
 from scipy.linalg import block_diag
 
+from .helix import vertexOffset, vertexOffsetGradient
+
 class VertexFit(FitBase):
     def __init__(self, v0, v0err, helixes=[]):
         super().__init__(2, 10)
@@ -31,40 +33,18 @@ class VertexFit(FitBase):
         self.state['D'] = np.zeros((self.numConstraints(), self.numParams()))
 
     def calculateGradients(self):
+        vtx = self.state['al0'][-3:]
+
         lo, hi = 0, 2
         jlo, jhi = 0, 2
         for _ in range(len(self.helixes)):
-            d0, phi0, omega, z0, tanl = self.state['al0'][jlo:jhi]
-            vtxx, vtxy, vtxz = self.state['al0'][-3:]
-            dztan = (vtxz - z0) / tanl
-            phiv = phi0 + omega * dztan
+            hpars = self.state['al0'][jlo:jhi]
 
-            sphiv, cphiv = np.sin(phiv), np.cos(phiv)
-            sphi0, cphi0 = np.sin(phi0), np.cos(phi0)
-            d0om = 1 + d0 * omega
+            self.state['d'][lo:hi] = vertexOffset(hpars, vtx)
+            hparsGrad, vtxGrad = vertexOffsetGradient(hpars, vtx)
+            self.state['D'][lo:hi, jlo:jhi] = hparsGrad
+            self.state['D'][lo:hi, -3:] = vtxGrad
 
-            # offset
-            self.state['d'][lo:hi] = np.array([
-                vtxx - ( sphiv - d0om * sphi0),
-                vtxy - (-cphiv + d0om * cphi0),
-            ]) / omega
-
-            # gradient
-            # 2x6 block
-            self.state['D'][lo:hi, jlo:jhi] = np.array([
-                [
-                    sphi0,
-                    (-cphiv + d0om * cphi0) / omega,
-                    (sphiv - sphi0) / omega**2 - dztan * cphiv,
-                    # TODO
-                ],
-                [
-                    -cphi0,
-                    (-sphiv + d0om * sphi0) / omega,
-                    (-cphiv + cphi0) / omega**2 - dztan * sphiv,
-                    # TODO
-                ]
-            ])
-            
             lo, hi = hi, hi + 2
             jlo, jhi = jhi, jhi + self.trksize
+

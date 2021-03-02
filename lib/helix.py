@@ -146,3 +146,52 @@ def makeHelix(pos, mom, q, B, errmtx=None):
     helix, length = helixParams(pos, mom, q, B)
     helix.errmtx = None if errmtx is None else jac.T @ errmtx @ jac
     return helix, length
+
+
+def vertexOffset(hpars, vtx):
+    """ Vector d using in vertex fit """
+    d0, phi0, omega, z0, tanl = hpars
+    dztan = (vtx[2] - z0) / tanl
+    phiv = phi0 + omega * dztan
+    d0om = 1 + d0 * omega
+
+    return np.array([
+        vtx[0] - ( np.sin(phiv) - d0om * np.sin(phi0)) / omega,
+        vtx[1] - (-np.cos(phiv) + d0om * np.cos(phi0)) / omega,
+    ]).reshape(1, -1)
+
+
+def vertexOffsetGradient(hpars, vtx):
+    """ Vector d gradient using in vertex fit """
+    d0, phi0, omega, z0, tanl = hpars
+    dz = vtx[2] - z0
+    dztan = dz / tanl
+    phiv = phi0 + omega * dz / tanl
+    d0om = 1 + d0 * omega
+
+    sphiv, cphiv = np.sin(phiv), np.cos(phiv)
+    sphi0, cphi0 = np.sin(phi0), np.cos(phi0)
+
+    g1 = np.array([  # d / d (hpars)
+        [
+            sphi0,
+            (-cphiv + d0om * cphi0) / omega,
+            ((sphiv - sphi0) / omega - dztan * cphiv) / omega,
+            cphiv / tanl,
+            cphiv * dztan / tanl
+        ],
+        [
+            -cphi0,
+            (-sphiv + d0om * sphi0) / omega,
+            ((-cphiv + cphi0) / omega - dztan * sphiv) / omega,
+            sphiv / tanl,
+            sphiv * dztan / tanl
+        ]
+    ])
+
+    g2 = np.array([  # d / d (vtx)
+        [1, 0, -cphiv / tanl],
+        [0, 1, -sphiv / tanl]
+    ])
+
+    return (g1, g2)

@@ -3,6 +3,7 @@ sys.path.append('lib')
 
 import numpy as np
 from helix import helixParams, helixJacobian, Helix, makeHelix
+from helix import vertexOffset, vertexOffsetGradient
 
 def test_helixJacobian():
     """ Numeric check of d (helix) / d (r, p) """
@@ -146,3 +147,31 @@ def test_helixCovariance():
         assert np.allclose([length0,], [length,])
         assert np.allclose(h0.pars, h.pars)
         assert np.allclose(h0.errmtx, h.errmtx)
+
+def test_vertexOffsetGradient():
+    rng = np.random.default_rng(seed=0)
+    hpars = rng.uniform(-1, 1, 5)
+    vtx = rng.uniform(-1, 1, 3)
+    eps = 1.e-6
+
+    offset = vertexOffset(hpars, vtx)
+    hparsGrad, vtxGrad = vertexOffsetGradient(hpars, vtx)
+
+    assert offset.shape == (1, 2)
+    assert hparsGrad.shape == (2, 5)
+    assert vtxGrad.shape == (2, 3)
+
+    for i in range(5):
+        hparstmp = hpars.copy()
+        hparstmp[i] += eps
+
+        doffset = (vertexOffset(hparstmp, vtx) - offset) / eps
+        print(doffset)
+        assert np.allclose(hparsGrad[:, i], doffset)
+
+    for i in range(3):
+        vtxtmp = vtx.copy()
+        vtxtmp[i] += eps
+
+        doffset = (vertexOffset(hpars, vtxtmp) - offset) / eps
+        assert np.allclose(vtxGrad[:, i], doffset)
