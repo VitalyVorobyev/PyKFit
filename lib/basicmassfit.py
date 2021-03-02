@@ -1,8 +1,8 @@
 """ """
 
-from fitbase import FitBase
-from particle import Particle
-from auxkine import massSqFromP3E, momentumFromMass, make_beta
+from .fitbase import FitBase
+from .particle import Particle
+from .auxkine import massSqFromP3E, momentumFromMass, make_beta
 
 import numpy as np
 from scipy.linalg import block_diag

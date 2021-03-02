@@ -34,7 +34,6 @@ def test_helixJacobian():
 
             assert np.allclose(dhOverEps, jac[i + 3,:])
 
-
 def test_jacobian():
     """ Numeric check of d (r, p) / d (helix) """
     rng = np.random.default_rng(seed=0)
@@ -62,7 +61,6 @@ def test_jacobian():
             assert np.allclose(dpos, jac[i,: 3])
             assert np.allclose(dmom, jac[i,-3:])
 
-
 def test_cart_helix_cart():
     rng = np.random.default_rng(seed=0)
     pos = rng.uniform(-1, 1, 3)
@@ -74,7 +72,6 @@ def test_cart_helix_cart():
 
         assert np.allclose(pos, h.position(length))
         assert np.allclose(mom, h.momentum(length, q, bfield))
-
 
 def test_helix_cart_helix():
     rng = np.random.default_rng(seed=0)
@@ -89,7 +86,6 @@ def test_helix_cart_helix():
         assert np.allclose([length0,], [length,])
         assert np.allclose(h0.pars, h.pars)
 
-
 def test_invJacobians():
     """ Check if product of inverse jacobians is a unit matrix """
     rng = np.random.default_rng(seed=0)
@@ -101,9 +97,6 @@ def test_invJacobians():
         h, length = helixParams(pos, mom, q, bfield)
         jac = helixJacobian(pos, mom, q, bfield)  # Jh = d (helix) / d (r, p)
         jacInv = h.jacobian(length, q, bfield)    # Jrp = d (r, p) / d (helix)
-
-        print(jac @ jacInv)
-        print(h.pars, q)
 
         assert jac.shape == (6, 5)
         assert jacInv.shape == (5, 6)
@@ -120,9 +113,6 @@ def test_cartesianCovariance():
 
     for q in [-1, 1]:
         h, length = makeHelix(pos, mom, q, bfield, errmtx)
-
-        print(errmtx)
-        print(h.cartesianCovariance(length, q, bfield))
         assert np.allclose(errmtx, h.cartesianCovariance(length, q, bfield))
 
 def test_helixCovariance():
@@ -166,7 +156,6 @@ def test_vertexOffsetGradient():
         hparstmp[i] += eps
 
         doffset = (vertexOffset(hparstmp, vtx) - offset) / eps
-        print(doffset)
         assert np.allclose(hparsGrad[:, i], doffset)
 
     for i in range(3):

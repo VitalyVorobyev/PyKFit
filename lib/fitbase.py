@@ -3,8 +3,8 @@
 import numpy as np
 import abc
 
-from fittrack import KFitTrack
-from errormaker import make_error_type1_pair
+from .fittrack import KFitTrack
+from .errormaker import make_error_type1_pair
 
 def check_zero_energy(mom):
     assert mom[-1] != 0

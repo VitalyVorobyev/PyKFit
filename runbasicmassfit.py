@@ -2,10 +2,10 @@
 """ """
 
 import numpy as np
-# from massfit import MassFit
-from basicmassfit import BasicMassFit
-from decaysample import d0pipi
-from particle import Particle
+
+from lib.basicmassfit import BasicMassFit
+from lib.decaysample import d0pipi
+from lib.particle import Particle
 
 def d0pipiFit():
     tracks = d0pipi(sigma=0.003)
@@ -15,7 +15,6 @@ def d0pipiFit():
         momentum=sum([trk.momentum for trk in tracks]),
         errmtx=None
     )
-    print(d0before.mass)
     print(f'{d0before.mass:.9f}')
     
     mfit = BasicMassFit(1.865)

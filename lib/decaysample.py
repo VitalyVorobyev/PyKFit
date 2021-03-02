@@ -2,7 +2,8 @@
 
 import numpy as np
 from scipy.spatial.transform import Rotation
-from particle import Particle
+
+from .particle import Particle
 
 MD0 = 1.865
 MPI = 0.145
@@ -31,8 +32,8 @@ def d0pipi(sigma=0.001, seed=None):
     p2 = np.array(list(p2) + [e2])
 
     return (
-        Particle(+1, p1, errmtx),
-        Particle(-1, p2, errmtx)
+        Particle(charge=+1, momentum=p1, errmtx=errmtx),
+        Particle(charge=-1, momentum=p2, errmtx=errmtx)
     )
 
 def main():

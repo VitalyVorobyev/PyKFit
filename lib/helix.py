@@ -79,6 +79,9 @@ class Helix:
         jac = self.jacobian(length, q, B)
         return jac.T @ self.errmtx @ jac
 
+    def lengthAtZ(self, z):
+        return (z - self.z0) / self.tanl
+
 
 def helixParams(pos, mom, q, B):
     x, y, z = pos
