@@ -15,6 +15,9 @@ class Helix:
         self.tanl = tanl
         self.errmtx = errmtx
 
+        print('new helix:', end=' ')
+        print(f'{d0:6.3f} {phi0:6.3f} {omega:6.3f} {z0:6.3f} {tanl:6.3f}')
+
     @property
     def pars(self):
         return np.array([self.d0, self.phi0, self.omega, self.z0, self.tanl])

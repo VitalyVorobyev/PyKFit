@@ -42,7 +42,7 @@ class FitBase(abc.ABC):
                 self.tracks[id1].momentum(True),
                 self.tracks[id2].momentum(True),
                 self.state['Val1'][6*id1:6*id1+6, 6*id2:6*id2+6])
-        
+    
         if id1 == id2:
             return self.tracks[id1].before['errmtx']
 
@@ -69,18 +69,19 @@ class FitBase(abc.ABC):
     
         chisq, chisq_tmp = 0., 1.e10
         self.state.update({
-            'ala' : self.state['al0'].copy(),
+            # 'ala' : self.state['al0'].copy(),
             'al1' : self.state['al0'].copy(),
             'Val1': np.empty(self.state['Val0'].shape),
         })
-        alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
+        # alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
+        alp_tmp = {key: self.state[key] for key in ['al1', 'Val1']}
 
         for i in range(self.max_iterations):
             self.calculateGradients()
             chisq = self.__in_loop_calculation()
             print(f'iteration {i}/{self.max_iterations} {chisq:.6f} {chisq_tmp:.6f}')
 
-            if chisq_tmp < chisq + 1.e-6:
+            if chisq_tmp < chisq + 1.e-8:
                 chisq = chisq_tmp
                 for key, value in alp_tmp.items():
                     self.state[key] = value
@@ -91,9 +92,10 @@ class FitBase(abc.ABC):
                     alp_tmp[key] = self.state[key]
 
                 if i == self.max_iterations - 1:
-                    self.state['ala'] = alp_tmp['al1']
+                    # self.state['ala'] = alp_tmp['al1']
                     self.maxIterationReached = True
 
+        self.descendants_updated = True
         self.updateDescendants()
         self.chisq = chisq
         self.fitted = True
@@ -101,28 +103,52 @@ class FitBase(abc.ABC):
     def __in_loop_calculation(self):
         self.state['VD'] = self.__updated_VD()
         offset = self.__offset()
-        print(self.state['VD'].shape, offset.shape)
+
+
         self.state['lam'] = self.state['VD'] @ offset
         chisq = self.state['lam'].T @ offset
         self.state['al1'] = self.__updated_al1()
         self.state['Val1'] = self.__updated_Val1()
 
+        npars, nconstr = self.numParams(), self.numConstraints()
+        assert self.state[  'VD'].shape == (nconstr, nconstr)
+        assert self.state[ 'lam'].shape == (nconstr, 1)
+        assert self.state[ 'al1'].shape == (npars, 1)
+        assert self.state['Val1'].shape == (npars, npars)
+
+        # print(f'{offset.ravel()} -> {self.__offset()}')
+        print(self.state['d'])
+
         return chisq.item()
 
     def __updated_VD(self):
-        print(self.state['Val0'].shape, self.state['D'].shape)
         return inverse_similarity(self.state['Val0'], self.state['D'])
 
     def __offset(self):
         """ [dx1] + [Nxd].T x ([Nx1] - [Nx1]) -> [dx1] """
-        print(self.state['d'].shape, self.state['D'].shape, self.state['al0'].shape, self.state['al1'].shape)
+        npars, nconstr = self.numParams(), self.numConstraints()
+        assert self.state[  'd'].shape == (nconstr, 1)
+        assert self.state[  'D'].shape == (npars, nconstr)
+        assert self.state['al0'].shape == (npars, 1)
+        assert self.state['al1'].shape == (npars, 1)
+
         return self.state['d'] + self.state['D'].T @ (self.state['al0'] - self.state['al1'])
 
     def __updated_al1(self):
         """ [Nx1] - [NxN] x [Nxd] x [dx1] """
-        print(self.state['Val0'].shape, self.state['D'].shape, self.state['lam'].shape)
+        npars, nconstr = self.numParams(), self.numConstraints()
+        assert self.state[ 'al0'].shape == (npars, 1)
+        assert self.state['Val0'].shape == (npars, npars)
+        assert self.state[   'D'].shape == (npars, nconstr)
+        assert self.state[ 'lam'].shape == (nconstr, 1)
+    
         return self.state['al0'] - self.state['Val0'] @ self.state['D'] @ self.state['lam']
 
     def __updated_Val1(self):
         """ [NxN] - [NxN] x [Nxd] x [dxd] x [Nxd].T x [NxN] -> [NxN] """
+        npars, nconstr = self.numParams(), self.numConstraints()
+        assert self.state['Val0'].shape == (npars, npars)
+        assert self.state[   'D'].shape == (npars, nconstr)
+        assert self.state[  'VD'].shape == (nconstr, nconstr)
+
         return self.state['Val0'] - self.state['Val0'] @ self.state['D'] @ self.state['VD'] @ self.state['D'].T @ self.state['Val0']

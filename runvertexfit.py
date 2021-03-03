@@ -15,7 +15,7 @@ def d0pipiFit():
         momentum=sum([trk.momentum for trk in tracks]),
         errmtx=None
     )
-    print(f'{d0before.mass:.9f}')
+    print(f'{d0before.mass:.4f}')
 
     vtx = np.zeros(3)
     vtxErr = np.eye(3) * 100
@@ -24,10 +24,16 @@ def d0pipiFit():
     vfit.doFit()
     d0after = vfit.makeParent()
     
-    print(f'{d0after.mass:.9f} {d0after.extra["chisq"]:.4f}')
-    print(d0after.position)
-    print(d0after.momentum)
-    print(d0after.errmtx)
+    print(f'{d0after.mass:.4f} {d0after.extra["chisq"]:.4f}')
+
+    vertex = vfit.vertex()
+    print(f'vertex: {vertex}')
+
+    lengths = [trk.helix.lengthAtZ(vertex[2]) for trk in vfit.tracks]
+    positions = [trk.helix.position(leng) for leng, trk in zip(lengths, vfit.tracks)]
+
+    print(f'lengths: {lengths}')
+    print(f'positions: {positions}')
 
 def main():
     d0pipiFit()

@@ -23,14 +23,14 @@ class VertexFit(FitBase):
         return self.state['al0'].size
 
     def helixPars(self, idx):
-        return self.state['al1'][idx * self.trksize:(idx + 1) * self.trksize]
+        return self.state['al1'][idx * self.trksize:(idx + 1) * self.trksize].ravel()
 
     def helixErrs(self, idx):
         lo, hi = idx * self.trksize, (idx + 1) * self.trksize
         return self.state['Val1'][lo:hi, lo:hi]
 
     def vertex(self):
-        return self.state['al1'][-3:]
+        return self.state['al1'][-3:].ravel()
 
     def vertexError(self):
         return self.state['Val1'][-3:,-3:]
@@ -45,12 +45,12 @@ class VertexFit(FitBase):
         self.state['D'] = np.zeros((self.numParams(), self.numConstraints()))
 
     def calculateGradients(self):
-        vtx = self.state['al0'][-3:]
+        vtx = self.state['al1'][-3:]
 
         lo, hi = 0, 2
         jlo, jhi = 0, self.trksize
         for _ in range(len(self.tracks)):
-            hpars = self.state['al0'][jlo:jhi]
+            hpars = self.state['al1'][jlo:jhi]
 
             self.state['d'][lo:hi] = vertexOffset(hpars, vtx)
             hparsGrad, vtxGrad = vertexOffsetGradient(hpars, vtx)
@@ -70,9 +70,11 @@ class VertexFit(FitBase):
         if not self.descendants_updated:
             self.updateDescendants()
         
+        assert self.vertex().shape == (3,)
+
         errmtx = sum([trk.errmtx for trk in self.tracks])
-        errmtx[:3, :3] = self.vertexError()
-        errmtx[-3:, :3] = errmtx[:3, -3:] = np.zeros((3, 3))
+        errmtx[  :3, :3] = self.vertexError()
+        errmtx[-3:,  :3] = errmtx[:3, -3:] = np.zeros((3, 3))
         return Particle(
             charge=sum(trk.charge for trk in self.tracks),
             momentum=sum([trk.momentum for trk in self.tracks]),

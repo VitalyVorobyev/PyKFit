@@ -15,9 +15,7 @@ class Particle:
 
     @property
     def mass(self):
-        if self.mass0 is not None:
-            return self.mass0
-        return massFromP4(self.momentum).item()
+        return self.mass0 if self.mass0 is not None else massFromP4(self.momentum).item()
 
     @property
     def threeMomentumError(self):
@@ -32,8 +30,9 @@ class Particle:
 
     def buildCartesian(self, length, bfield=1.5):
         self.position = self.helix.position(length)
-        self.momentum = momentumFromMass(
-            self.helix.momentum(length, self.charge, bfield),
-            self.mass
-        )
+        self.momentum = momentumFromMass(self.helix.momentum(length, self.charge, bfield), self.mass)
         self.errmtx = self.helix.cartesianCovariance(length, self.charge, bfield)
+
+        assert self.position.shape == (3,)
+        assert self.momentum.shape == (4,)
+        assert self.errmtx.shape == (6,6)

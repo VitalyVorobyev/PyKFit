@@ -23,6 +23,7 @@ def d0pipi(sigma=0.002, seed=None):
     h01, _ = makeHelix(position, rot @  p0, +1, 1.5)
     h02, _ = makeHelix(position, rot @ -p0, -1, 1.5)
 
+    # errors = np.zeros((2,5)) # sigma * rng.standard_normal((2, 5))
     errors = sigma * rng.standard_normal((2, 5))
     hpars1 = h01.pars + errors[0]
     hpars2 = h02.pars + errors[1]

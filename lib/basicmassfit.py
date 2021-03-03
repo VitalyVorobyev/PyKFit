@@ -15,6 +15,12 @@ class BasicMassFit(FitBase):
         self.trksize = 3
         self.descendants_updated = False
 
+    def numParams(self):
+        return self.state['al0'].size
+
+    def numConstraints(self):
+        return 1
+
     def fillInputMatrix(self):
         assert len(self.tracks) >= self.necessaryTrackCount
 
