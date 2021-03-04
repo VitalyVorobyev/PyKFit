@@ -69,12 +69,12 @@ class FitBase(abc.ABC):
     
         chisq, chisq_tmp = 0., 1.e10
         self.state.update({
-            # 'ala' : self.state['al0'].copy(),
+            'ala' : self.state['al0'].copy(),
             'al1' : self.state['al0'].copy(),
             'Val1': np.empty(self.state['Val0'].shape),
         })
-        # alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
-        alp_tmp = {key: self.state[key] for key in ['al1', 'Val1']}
+        alp_tmp = {key: self.state[key] for key in ['al1', 'Val1', 'ala']}
+        # alp_tmp = {key: self.state[key] for key in ['al1', 'Val1']}
 
         for i in range(self.max_iterations):
             self.calculateGradients()
@@ -84,15 +84,18 @@ class FitBase(abc.ABC):
             if chisq_tmp < chisq + 1.e-8:
                 chisq = chisq_tmp
                 for key, value in alp_tmp.items():
-                    self.state[key] = value
+                    self.state[key] = value.copy()
                 break
             else:
                 chisq_tmp = chisq
-                for key in alp_tmp.keys():
-                    alp_tmp[key] = self.state[key]
+                alp_tmp['ala'] = alp_tmp['al1'].copy()
+                alp_tmp['al1'] = self.state['al1'].copy()
+                alp_tmp['Val1'] = self.state['Val1'].copy()
+                # for key in alp_tmp.keys():
+                    # alp_tmp[key] = self.state[key].copy()
 
                 if i == self.max_iterations - 1:
-                    # self.state['ala'] = alp_tmp['al1']
+                    self.state['ala'] = alp_tmp['al1'].copy()
                     self.maxIterationReached = True
 
         self.descendants_updated = True
@@ -104,7 +107,6 @@ class FitBase(abc.ABC):
         self.state['VD'] = self.__updated_VD()
         offset = self.__offset()
 
-
         self.state['lam'] = self.state['VD'] @ offset
         chisq = self.state['lam'].T @ offset
         self.state['al1'] = self.__updated_al1()
@@ -115,9 +117,6 @@ class FitBase(abc.ABC):
         assert self.state[ 'lam'].shape == (nconstr, 1)
         assert self.state[ 'al1'].shape == (npars, 1)
         assert self.state['Val1'].shape == (npars, npars)
-
-        # print(f'{offset.ravel()} -> {self.__offset()}')
-        print(self.state['d'])
 
         return chisq.item()
 

@@ -86,19 +86,16 @@ class Helix:
         return (z - self.z0) / self.tanl
 
 
-def helixParams(pos, mom, q, B):
+def helixParams(pos, mom, charge, B):
     x, y, z = pos
     px, py, pz = mom
-    qalph = q * alpha(B)
-
-    pt = np.hypot(px, py)
-    phi = np.arctan2(py, px)
+    qalph = charge * alpha(B)
 
     px0 = px + y * qalph
     py0 = py - x * qalph
 
-    pt0 = np.hypot(px0, py0)
-    phi0 = np.arctan2(py0, px0)
+    pt , phi  = np.hypot(px , py ), np.arctan2(py , px )
+    pt0, phi0 = np.hypot(px0, py0), np.arctan2(py0, px0)
     tanl = pz / pt
 
     # The flight length in the transverse plane, measured 
@@ -147,9 +144,9 @@ def helixJacobian(pos, mom, q, B):
         [0, 0, 0, -length / pt, 1 / pt]
     ])
 
-def makeHelix(pos, mom, q, B, errmtx=None):
-    jac = helixJacobian(pos, mom, q, B)
-    helix, length = helixParams(pos, mom, q, B)
+def makeHelix(pos, mom, charge, B, errmtx=None):
+    jac = helixJacobian(pos, mom, charge, B)
+    helix, length = helixParams(pos, mom, charge, B)
     helix.errmtx = None if errmtx is None else jac.T @ errmtx @ jac
     return helix, length
 

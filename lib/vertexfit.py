@@ -59,6 +59,8 @@ class VertexFit(FitBase):
 
             lo, hi = hi, hi + 2
             jlo, jhi = jhi, jhi + self.trksize
+        
+        print(f'offset: {self.state["d"].ravel()}')
 
     def updateDescendants(self):
         vtx = self.vertex()
